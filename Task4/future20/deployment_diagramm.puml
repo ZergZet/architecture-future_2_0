@@ -1,0 +1,75 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam linetype ortho
+skinparam nodesep 100
+skinparam ranksep 100
+skinparam packageStyle rectangle
+title Автоматизация развёртывания «Будущее 2.0» в Yandex Cloud
+
+package "Управляется Terraform" #DDEEFF {
+  component "yandex_vpc_network\nfuture20-vpc" as VPC
+  component "yandex_vpc_subnet\npublic" as PubSub
+  component "yandex_vpc_subnet\nprivate" as PrivSub
+  component "yandex_vpc_subnet\ndata" as DataSub
+  component "yandex_vpc_gateway\nNAT" as NAT
+  component "yandex_vpc_route_table\nprivate-rt" as RT
+  component "yandex_vpc_security_group\nbastion" as SGB
+  component "yandex_vpc_security_group\napp" as SGA
+
+  component "yandex_compute_instance\nbastion" as Bastion
+  component "yandex_compute_instance\nkafka" as Kafka
+  component "yandex_compute_instance\ndata-platform" as DataPlat
+  component "yandex_compute_instance\nfintech" as Fintech
+  component "yandex_compute_instance\nai" as AI
+  component "yandex_compute_instance\nclinical" as Clinical
+
+  component "yandex_compute_disk\nboot / network-ssd" as Disk
+  component "yandex_storage_bucket\nlakehouse" as Bucket
+  component "yandex_iam_service_account\nfuture20-sa" as SA
+}
+
+package "Вручную / другие системы" #FFEEEE {
+  component "DNS-регистратор\nдомен, TLS" as DNS
+  component "Банковское ядро\nрегуляторный аудит" as Bank
+  component "Партнёрские SaaS\nфармацевтика, электроника" as Partners
+  component "Первичная настройка\nAnsible / CI/CD / секреты" as Bootstrap
+  component "Прикладные сервисы доменов" as Services
+  component "S3, Apache Iceberg, Spark/Trino" as LakeHouse 
+  component "Каталог данных" as Catalog
+  component "BI-портал" as Portal
+  component "Мониторинг" as Prometeus
+  component "Резервное копирование" as BackUp_DR
+  component "SSO" as KeyClock
+}
+
+VPC --> PubSub
+VPC --> PrivSub
+VPC --> DataSub
+
+NAT --> RT
+RT --> PrivSub
+RT --> DataSub
+
+SGB --> Bastion
+SGA --> Kafka
+SGA --> DataPlat
+SGA --> Fintech
+SGA --> AI
+SGA --> Clinical
+
+Bastion --> PubSub
+Kafka --> PrivSub
+DataPlat --> PrivSub
+Fintech --> PrivSub
+AI --> PrivSub
+Clinical --> PrivSub
+
+Disk --> Bastion
+Disk --> Kafka
+Disk --> DataPlat
+Disk --> Fintech
+Disk --> AI
+Disk --> Clinical
+
+SA --> Bucket
+@enduml
