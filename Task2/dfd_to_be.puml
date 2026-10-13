@@ -1,0 +1,49 @@
+@startuml DFD_Future_2_0_to_be
+skinparam linetype ortho
+skinparam nodesep 100
+skinparam ranksep 100
+
+title Data Flow Diagram — «Будущее 2.0»
+
+'  Внешние сущности 
+actor "Врач" as doctor
+actor "Оператор клиники" as operator
+actor "Сотрудник финтеха" as fin_user
+actor "Бизнес-пользователь" as business
+actor "\t\tПартнёр\n(Фармацевтика/электроника)" as partner
+
+'  Домены 
+rectangle "Clinical Domain" as clinical
+rectangle "Medical Records Domain" as medical
+rectangle "AI Services Domain" as ai
+rectangle "Fintech Domain" as fintech
+rectangle "Corporate Domain" as corp
+rectangle "Partner Integration Domain" as partner_dom
+rectangle "Data Platform Domain" as data_platform
+rectangle "Integration Domain" as integration
+
+'  Потоки данных 
+doctor --> medical : Медицинские данные,\n снимки
+operator --> clinical : Запись пациентов
+fin_user --> fintech : Финансовые операции
+business --> data_platform : Запрос отчётов
+partner --> partner_dom : Данные о \nлекарствах/оборудовании
+
+clinical --> integration : События о приёмах
+medical --> ai : Обезличенные\n медицинские данные
+ai --> medical : Результаты анализа
+fintech --> integration : Финансовые события
+partner_dom --> integration : Партнёрские события
+corp --> integration : HR, инвентаризация
+
+integration --> data_platform : Поток событий\n(Kafka)
+data_platform --> business : Отчёты и\nData Products
+data_platform --> corp : Аналитика для\nГоловного офиса
+
+'  Изоляция медицинских карт 
+note right of medical
+  Медицинские карты и истории болезней
+  НЕ попадают в Data Platform для аналитики
+end note
+
+@enduml

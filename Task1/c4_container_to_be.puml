@@ -1,0 +1,106 @@
+@startuml C4_сontainer_future_2_0_to_be
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+skinparam linetype ortho
+skinparam nodesep 100
+skinparam ranksep 100
+
+title C4 Container Diagram — архитектура системы «Будущее 2.0» через год
+
+Person(Doctor, "Врач", "Работает с медицинскими данными")
+Person(Operator, "Оператор клиники", "Ведёт запись пациентов")
+Person(FinUser, "Сотрудник финтеха", "Работает с финансовыми продуктами")
+Person(Business, "Бизнес-пользователь", "Строит отчёты в портале самообслуживания")
+Person(Partner, "Партнёр", "Фармацевтика / электроника")
+
+Boundary(Clinical, "Clinical Domain") {
+  Container(ClinicApp, "Приложение для клиник", "Web / Mobile", "Запись, расписание, операционные данные")
+  Container(ClinicApi, "Clinical API", "REST / gRPC", "API для клиник")
+}
+
+Boundary(Medical, "Medical Records Domain") {
+  Container(EmrService, "Сервис электронной медицинской карты)", "Сервис", "Медицинские карты и истории болезней")
+  ContainerDb(MedicalRecordsDb, "Защищённая база медицинских записей", "Jatoba(PostgreSQL)", "Хранение медицинских карт и историй болезней")
+  ContainerDb(ImagingStorage, "Защищённое хранилище снимков", "Object Storage", "DICOM, результаты исследований")
+}
+
+Boundary(Ai, "AI Services Domain") {
+  Container(AiApi, "AI API", "Python / FastAPI", "Инференс ML-моделей")
+  Container(MlPipeline, "ML Pipeline", "Python / Kubeflow", "Обучение и версионирование моделей")
+}
+
+Boundary(Fintech, "Fintech Domain") {
+  Container(CoreBanking, "Core Banking", "Java", "Счета, кредиты, транзакции")
+  Container(FintechApi, "Fintech API", "Golang", "Платёжные и кредитные сервисы")
+}
+
+Boundary(Corp, "Corporate Domain") {
+  Container(HrSystem, "Кадровая система", "SaaS", "Персонал больницы")
+  Container(InventoryService, "Инвентаризация", "Сервис", "Закупки и склад")
+  Container(HqBi, "Корпоративная BI-система", "Power BI", "Стратегическая отчётность")
+}
+
+Boundary(Partner, "Partner Integration Domain") {
+  Container(PartnerGateway, "Partner Gateway", "API Gateway", "Подключение партнёров")
+  Container(PartnerEtl, "Partner ETL", "Airflow", "Обмен данными с фармой и электроникой")
+}
+
+Boundary(DataPlatform, "Data Platform Domain") {
+  Container(SelfServicePortal, "Портал самообслуживания", "React / Node.js", "Self-service analytics")
+  ContainerDb(DataCatalog, "Каталог данных", "DataHub", "Метаданные и Data Products")
+  ContainerDb(Lakehouse, "Lakehouse", "S3 + Iceberg + Spark", "Хранилище аналитических данных")
+  Container(SemanticLayer, "Семантический слой", "dbt / Cube.js", "Метрики и витрины")
+}
+
+Boundary(Integration, "Integration Domain") {
+  ContainerQueue(EventBusQueue, "Event Bus", "Apache Kafka", "Асинхронный обмен событиями")
+  Container(ApiGateway, "API Gateway", "Kong / Cloud API GW", "Маршрутизация и аутентификация")
+  Container(Orchestrator, "Orchestrator", "Temporal", "Сага-оркестрация")
+}
+
+Boundary(Infra, "Cloud Infrastructure") {
+  Container(Iam, "IAM", "Keycloak / Cloud IAM", "Аутентификация и авторизация")
+  Container(Observability, "Observability", "Prometheus / Grafana / ELK", "Мониторинг и логи")
+  Container(BackupDr, "Backup & DR", "Cloud-native", "Резервное копирование и геораспределение")
+}
+
+Rel(Doctor, EmrService, "Читает/пишет медкарты", "HTTPS")
+Rel(Operator, ClinicApp, "Ведёт запись", "HTTPS")
+Rel(FinUser, FintechApi, "Работает с продуктами", "HTTPS")
+Rel(Business, SelfServicePortal, "Строит отчёты", "HTTPS")
+Rel(Partner, PartnerGateway, "Обменивается данными", "REST / SFTP")
+
+Rel(ClinicApp, ClinicApi, "Вызывает", "REST")
+Rel(ClinicApi, EmrService, "Запрашивает медданные", "gRPC")
+Rel(EmrService, MedicalRecordsDb, "Читает/пишет", "SQL")
+Rel(EmrService, ImagingStorage, "Хранит снимки", "S3 API")
+Rel(AiApi, MedicalRecordsDb, "Читает обезличенные данные", "gRPC")
+Rel(MlPipeline, AiApi, "Деплоит модели", "CI/CD")
+
+Rel(FintechApi, CoreBanking, "Вызывает", "gRPC")
+Rel(PartnerGateway, PartnerEtl, "Передаёт данные", "REST")
+Rel(PartnerEtl, Lakehouse, "Пишет аналитику", "Batch")
+
+Rel(SelfServicePortal, SemanticLayer, "Запрашивает метрики", "REST")
+Rel(SemanticLayer, Lakehouse, "Читает данные", "SQL")
+Rel(DataCatalog, Lakehouse, "Описывает", "API")
+Rel(HqBi, SemanticLayer, "Читает метрики", "REST")
+
+Rel(ClinicApi, EventBusQueue, "Публикует события", "Kafka")
+Rel(FintechApi, EventBusQueue, "Публикует события", "Kafka")
+Rel(AiApi, EventBusQueue, "Публикует события", "Kafka")
+Rel(PartnerGateway, EventBusQueue, "Публикует события", "Kafka")
+Rel(EventBusQueue, Lakehouse, "Поток данных", "Kafka Connect")
+
+Rel(ApiGateway, ClinicApi, "Маршрутизирует", "HTTPS")
+Rel(ApiGateway, FintechApi, "Маршрутизирует", "HTTPS")
+Rel(ApiGateway, AiApi, "Маршрутизирует", "HTTPS")
+Rel(ApiGateway, PartnerGateway, "Маршрутизирует", "HTTPS")
+Rel(Orchestrator, EventBusQueue, "Оркестрирует саги", "Kafka")
+
+Rel(Iam, ApiGateway, "Аутентификация", "OIDC")
+Rel(Observability, EventBusQueue, "Сбор метрик", "Prometheus")
+Rel(BackupDr, Lakehouse, "Резервное копирование", "S3")
+Rel(BackupDr, CoreBanking, "Резервное копирование", "Native")
+
+@enduml
